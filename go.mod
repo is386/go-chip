@@ -1,4 +1,4 @@
-module github.com/is386/CHIP82
+module github.com/is386/GoCHIP
 
 go 1.15
 
