@@ -31,15 +31,35 @@ var (
 		0xF0, 0x80, 0xF0, 0x80, 0x80}
 )
 
+func decrementTimers(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan bool) {
+	for {
+		select {
+		case <-stopTicking:
+			return
+		case <-ticker.C:
+			emu.DecrementTimers()
+		}
+	}
+}
+
 func run() {
 	screen := chip8.NewScreen(SCALE)
 	emu := chip8.NewEmulator(screen)
+
+	ticker := time.NewTicker(TIME_DELAY)
+	stopTicking := make(chan bool)
+	go decrementTimers(emu, ticker, stopTicking)
+
 	emu.LoadFont(FONT)
 	emu.LoadRom(FILENAME)
+
 	for !screen.Closed() {
 		time.Sleep(EMU_DELAY)
 		emu.Execute()
 	}
+
+	ticker.Stop()
+	stopTicking <- true
 }
 
 func main() {

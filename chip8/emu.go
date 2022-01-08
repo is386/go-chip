@@ -137,3 +137,12 @@ func (emu *Emulator) display(X uint16, Y uint16, N uint8) {
 	}
 	emu.screen.Update()
 }
+
+func (emu *Emulator) DecrementTimers() {
+	if emu.delayTimer != 0 {
+		emu.delayTimer -= 1
+	}
+	if emu.soundTimer != 0 {
+		emu.soundTimer -= 1
+	}
+}
