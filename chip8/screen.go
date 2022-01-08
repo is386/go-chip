@@ -1,7 +1,6 @@
 package chip8
 
 import (
-	"fmt"
 	"image/color"
 
 	"github.com/faiface/pixel"
@@ -30,8 +29,6 @@ func NewScreen(scale float64) *Screen {
 
 	imd := imdraw.New(nil)
 	screen := Screen{width: 64, height: 32, scale: scale, window: win, drawer: imd}
-	screen.Clear()
-	screen.Update()
 	return &screen
 }
 
@@ -55,11 +52,11 @@ func (s *Screen) DrawPixel(x0 float64, y0 float64, color color.RGBA) {
 	s.drawer.Push(pixel.V(x+s.scale, y+s.scale))
 	s.drawer.Rectangle(0)
 	s.drawer.Draw(s.window)
+	s.Update()
 }
 
 func (s *Screen) GetColor(x float64, y float64) int {
 	color := s.window.Color(pixel.V(x*s.scale, y*s.scale))
-	fmt.Println(color)
 	if color.R == 0 && color.G == 0 && color.B == 0 && color.A == 1 {
 		return 0
 	}
