@@ -1,6 +1,7 @@
 package chip8
 
 import (
+	"fmt"
 	"io/ioutil"
 )
 
@@ -34,4 +35,16 @@ func (emu *Emulator) LoadRom(filename string) {
 	for i := 0; i < len(rom); i++ {
 		emu.memory[emu.pc+uint16(i)] = uint16(rom[i])
 	}
+}
+
+func (emu *Emulator) fetch() uint16 {
+	byte1 := emu.memory[emu.pc]
+	byte2 := emu.memory[emu.pc+1]
+	emu.pc += 2
+	return (byte1 << 8) | byte2
+}
+
+func (emu *Emulator) Execute() {
+	instr := emu.fetch()
+	fmt.Printf("%x\n", instr)
 }
