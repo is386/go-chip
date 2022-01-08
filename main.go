@@ -31,6 +31,8 @@ var (
 
 func run() {
 	screen := chip8.NewScreen(SCALE)
+	emu := chip8.NewEmulator(*screen)
+	emu.LoadFont(FONT)
 	for !screen.Closed() {
 	}
 }
