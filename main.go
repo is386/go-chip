@@ -34,6 +34,10 @@ func run() {
 	emu := chip8.NewEmulator(*screen)
 	emu.LoadFont(FONT)
 	emu.LoadRom(FILENAME)
+	for i := 0; i < 133; i++ {
+		emu.Execute()
+	}
+
 }
 
 func main() {
