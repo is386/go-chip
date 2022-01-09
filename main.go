@@ -8,13 +8,12 @@ import (
 )
 
 var (
-	FILENAME   = "brick.ch8"
+	FILENAME   = "roms/brick.ch8"
 	SCALE      = 10.0
-	EMU_DELAY  = 10 * time.Millisecond
 	TIME_DELAY = 16 * time.Millisecond
 )
 
-func decrementTimers(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan bool) {
+func emulatorTicker(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan bool) {
 	for {
 		select {
 		case <-stopTicking:
@@ -31,7 +30,7 @@ func run() {
 
 	ticker := time.NewTicker(TIME_DELAY)
 	stopTicking := make(chan bool)
-	go decrementTimers(emu, ticker, stopTicking)
+	go emulatorTicker(emu, ticker, stopTicking)
 
 	emu.LoadRom(FILENAME)
 
