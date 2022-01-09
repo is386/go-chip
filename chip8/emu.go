@@ -5,7 +5,47 @@ import (
 	"io/ioutil"
 	"math/rand"
 
+	"github.com/faiface/pixel/pixelgl"
 	"golang.org/x/image/colornames"
+)
+
+var (
+	font = [80]byte{
+		0xF0, 0x90, 0x90, 0x90, 0xF0,
+		0x20, 0x60, 0x20, 0x20, 0x70,
+		0xF0, 0x10, 0xF0, 0x80, 0xF0,
+		0xF0, 0x10, 0xF0, 0x10, 0xF0,
+		0x90, 0x90, 0xF0, 0x10, 0x10,
+		0xF0, 0x80, 0xF0, 0x10, 0xF0,
+		0xF0, 0x80, 0xF0, 0x90, 0xF0,
+		0xF0, 0x10, 0x20, 0x40, 0x40,
+		0xF0, 0x90, 0xF0, 0x90, 0xF0,
+		0xF0, 0x90, 0xF0, 0x10, 0xF0,
+		0xF0, 0x90, 0xF0, 0x90, 0x90,
+		0xE0, 0x90, 0xE0, 0x90, 0xE0,
+		0xF0, 0x80, 0x80, 0x80, 0xF0,
+		0xE0, 0x90, 0x90, 0x90, 0xE0,
+		0xF0, 0x80, 0xF0, 0x80, 0xF0,
+		0xF0, 0x80, 0xF0, 0x80, 0x80}
+
+	keypad = map[uint8]pixelgl.Button{
+		0x0: pixelgl.KeyX,
+		0x1: pixelgl.Key1,
+		0x2: pixelgl.Key2,
+		0x3: pixelgl.Key3,
+		0x4: pixelgl.KeyQ,
+		0x5: pixelgl.KeyW,
+		0x6: pixelgl.KeyE,
+		0x7: pixelgl.KeyA,
+		0x8: pixelgl.KeyS,
+		0x9: pixelgl.KeyD,
+		0xA: pixelgl.KeyZ,
+		0xB: pixelgl.KeyC,
+		0xC: pixelgl.Key4,
+		0xD: pixelgl.KeyR,
+		0xE: pixelgl.KeyF,
+		0xF: pixelgl.KeyV,
+	}
 )
 
 type Emulator struct {
@@ -21,10 +61,11 @@ type Emulator struct {
 
 func NewEmulator(screen *Screen) *Emulator {
 	emu := Emulator{pc: 0x200, screen: screen}
+	emu.loadFont()
 	return &emu
 }
 
-func (emu *Emulator) LoadFont(font [80]byte) {
+func (emu *Emulator) loadFont() {
 	for i := 0; i < len(font); i++ {
 		emu.memory[i] = uint16(font[i])
 	}
@@ -122,7 +163,16 @@ func (emu *Emulator) Execute() {
 	case 0xD:
 		emu.display(X, Y, N)
 	case 0xE:
-		return
+		switch NN {
+		case 0x9E:
+			if emu.keyPressed(X) {
+				emu.skip()
+			}
+		case 0xA1:
+			if !emu.keyPressed(X) {
+				emu.skip()
+			}
+		}
 	case 0xF:
 		switch NN {
 		case 0x07:
@@ -134,7 +184,7 @@ func (emu *Emulator) Execute() {
 		case 0x1E:
 			emu.addToIndex(X)
 		case 0x0A:
-			return
+			emu.waitForKey(X)
 		case 0x29:
 			emu.setIndexToFont(X)
 		case 0x33:
@@ -177,12 +227,7 @@ func (emu *Emulator) setRegister(X uint8, NN uint8) {
 }
 
 func (emu *Emulator) addToRegister(X uint8, NN uint8) {
-	temp := emu.registers[X] + NN
-	if temp <= 255 {
-		emu.registers[X] = temp
-	} else {
-		emu.registers[X] = temp - 255 - 1
-	}
+	emu.registers[X] = emu.registers[X] + NN
 }
 
 func (emu *Emulator) logicalOr(X uint8, Y uint8) {
@@ -198,12 +243,12 @@ func (emu *Emulator) logicalXor(X uint8, Y uint8) {
 }
 
 func (emu *Emulator) addTwoRegisters(X uint8, Y uint8) {
-	temp := emu.registers[X] + emu.registers[Y]
+	temp := uint16(emu.registers[X] + emu.registers[Y])
 	if temp <= 255 {
-		emu.registers[X] = temp
+		emu.registers[X] = uint8(temp)
 		emu.registers[0xF] = 0
 	} else {
-		emu.registers[X] = temp - 255 - 1
+		emu.registers[X] = uint8(temp - 256)
 		emu.registers[0xF] = 1
 	}
 }
@@ -224,7 +269,7 @@ func (emu *Emulator) subnTwoRegisters(X uint8, Y uint8) {
 		emu.registers[0xF] = 1
 	} else {
 		emu.registers[0xF] = 0
-		emu.registers[X] = emu.registers[Y] - emu.registers[X] + 255 - 1
+		emu.registers[X] = emu.registers[Y] - emu.registers[X] + 255 + 1
 	}
 }
 
@@ -235,12 +280,7 @@ func (emu *Emulator) shiftRegisterRight(X uint8) {
 
 func (emu *Emulator) shiftRegisterLeft(X uint8) {
 	emu.registers[0xF] = (emu.registers[X] & 0x80) >> 7
-	temp := emu.registers[X] << 1
-	if temp <= 255 {
-		emu.registers[X] = temp
-	} else {
-		emu.registers[X] = temp - 255 - 1
-	}
+	emu.registers[X] <<= 1
 }
 
 func (emu *Emulator) setIndex(NNN uint16) {
@@ -282,11 +322,16 @@ func (emu *Emulator) display(X uint8, Y uint8, N uint8) {
 			screenPixel := emu.screen.GetColor(x, y)
 			if (pixel == 1) && (screenPixel == 1) {
 				emu.screen.DrawPixel(x, y, colornames.Black)
+				emu.registers[0xF] = 1
 			} else if (pixel == 1) && (screenPixel != 1) {
 				emu.screen.DrawPixel(x, y, colornames.White)
 			}
 		}
 	}
+}
+
+func (emu *Emulator) keyPressed(X uint8) bool {
+	return emu.screen.window.Pressed(keypad[emu.registers[X]])
 }
 
 func (emu *Emulator) setDelayTimer(X uint8) {
@@ -299,6 +344,17 @@ func (emu *Emulator) setSoundTimer(X uint8) {
 
 func (emu *Emulator) addToIndex(X uint8) {
 	emu.index += uint16(emu.registers[X])
+}
+
+func (emu *Emulator) waitForKey(X uint8) {
+	for {
+		emu.screen.window.UpdateInputWait(0)
+		for keyByte, key := range keypad {
+			if emu.screen.window.JustPressed(key) {
+				emu.registers[X] = keyByte
+			}
+		}
+	}
 }
 
 func (emu *Emulator) setIndexToFont(X uint8) {
