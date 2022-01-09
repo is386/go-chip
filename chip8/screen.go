@@ -61,3 +61,7 @@ func (s *Screen) GetColor(x float64, y float64) int {
 	}
 	return 1
 }
+
+func (s *Screen) KeyPressed(key pixelgl.Button) bool {
+	return s.window.Pressed(key)
+}

@@ -60,35 +60,35 @@ type Emulator struct {
 }
 
 func NewEmulator(screen *Screen) *Emulator {
-	emu := Emulator{pc: 0x200, screen: screen}
-	emu.loadFont()
-	return &emu
+	e := Emulator{pc: 0x200, screen: screen}
+	e.loadFont()
+	return &e
 }
 
-func (emu *Emulator) loadFont() {
+func (e *Emulator) loadFont() {
 	for i := 0; i < len(font); i++ {
-		emu.memory[i] = uint16(font[i])
+		e.memory[i] = uint16(font[i])
 	}
 }
 
-func (emu *Emulator) LoadRom(filename string) {
+func (e *Emulator) LoadRom(filename string) {
 	rom, err := ioutil.ReadFile(filename)
 	if err != nil {
 		panic(err)
 	}
 	for i := 0; i < len(rom); i++ {
-		emu.memory[emu.pc+uint16(i)] = uint16(rom[i])
+		e.memory[e.pc+uint16(i)] = uint16(rom[i])
 	}
 }
 
-func (emu *Emulator) fetch() uint16 {
-	byte1 := emu.memory[emu.pc]
-	byte2 := emu.memory[emu.pc+1]
-	emu.pc += 2
+func (e *Emulator) fetch() uint16 {
+	byte1 := e.memory[e.pc]
+	byte2 := e.memory[e.pc+1]
+	e.pc += 2
 	return (byte1 << 8) | byte2
 }
 
-func (emu *Emulator) decode(instr uint16) (uint8, uint8, uint8, uint8, uint8, uint16) {
+func (e *Emulator) decode(instr uint16) (uint8, uint8, uint8, uint8, uint8, uint16) {
 	op := instr >> 12
 	X := (instr & 0x0F00) >> 8
 	Y := (instr & 0x00F0) >> 4
@@ -98,296 +98,288 @@ func (emu *Emulator) decode(instr uint16) (uint8, uint8, uint8, uint8, uint8, ui
 	return uint8(op), uint8(X), uint8(Y), uint8(N), uint8(NN), NNN
 }
 
-func (emu *Emulator) Execute() {
-	instr := emu.fetch()
-	op, X, Y, N, NN, NNN := emu.decode(instr)
+func (e *Emulator) Execute() {
+	instr := e.fetch()
+	op, X, Y, N, NN, NNN := e.decode(instr)
 	switch op {
 	case 0x0:
 		switch NN {
 		case 0xE0:
-			emu.clearScreen()
+			e.clearScreen()
 		case 0xEE:
-			emu.returnFromSubroutine()
+			e.returnFromSubroutine()
 		}
 	case 0x1:
-		emu.jump(NNN)
+		e.jump(NNN)
 	case 0x2:
-		emu.callSubroutine(NNN)
+		e.callSubroutine(NNN)
 	case 0x3:
-		if emu.registers[X] == NN {
-			emu.skip()
+		if e.registers[X] == NN {
+			e.skip()
 		}
 	case 0x4:
-		if emu.registers[X] != NN {
-			emu.skip()
+		if e.registers[X] != NN {
+			e.skip()
 		}
 	case 0x5:
-		if emu.registers[X] == emu.registers[Y] {
-			emu.skip()
+		if e.registers[X] == e.registers[Y] {
+			e.skip()
 		}
 	case 0x9:
-		if emu.registers[X] != emu.registers[Y] {
-			emu.skip()
+		if e.registers[X] != e.registers[Y] {
+			e.skip()
 		}
 	case 0x6:
-		emu.setRegister(X, NN)
+		e.setRegister(X, NN)
 	case 0x7:
-		emu.addToRegister(X, NN)
+		e.addToRegister(X, NN)
 	case 0x8:
 		switch N {
 		case 0x0:
-			emu.setRegister(X, emu.registers[Y])
+			e.setRegister(X, e.registers[Y])
 		case 0x1:
-			emu.logicalOr(X, Y)
+			e.logicalOr(X, Y)
 		case 0x2:
-			emu.logicalAnd(X, Y)
+			e.logicalAnd(X, Y)
 		case 0x3:
-			emu.logicalXor(X, Y)
+			e.logicalXor(X, Y)
 		case 0x4:
-			emu.addTwoRegisters(X, Y)
+			e.addTwoRegisters(X, Y)
 		case 0x5:
-			emu.subTwoRegisters(X, Y)
+			e.subTwoRegisters(X, Y)
 		case 0x6:
-			emu.shiftRegisterRight(X)
+			e.shiftRegisterRight(X)
 		case 0x7:
-			emu.subnTwoRegisters(X, Y)
+			e.subnTwoRegisters(X, Y)
 		case 0xE:
-			emu.shiftRegisterLeft(X)
+			e.shiftRegisterLeft(X)
 		}
 	case 0xA:
-		emu.setIndex(NNN)
+		e.setIndex(NNN)
 	case 0xB:
-		emu.jumpWithOffset(NNN)
+		e.jumpWithOffset(NNN)
 	case 0xC:
-		emu.generateRandom(X, NN)
+		e.generateRandom(X, NN)
 	case 0xD:
-		emu.display(X, Y, N)
+		e.display(X, Y, N)
 	case 0xE:
 		switch NN {
 		case 0x9E:
-			if emu.keyPressed(X) {
-				emu.skip()
+			if e.keyPressed(X) {
+				e.skip()
 			}
 		case 0xA1:
-			if !emu.keyPressed(X) {
-				emu.skip()
+			if !e.keyPressed(X) {
+				e.skip()
 			}
 		}
 	case 0xF:
 		switch NN {
 		case 0x07:
-			emu.setRegister(X, emu.delayTimer)
+			e.setRegister(X, e.delayTimer)
 		case 0x15:
-			emu.setDelayTimer(X)
+			e.setDelayTimer(X)
 		case 0x18:
-			emu.setSoundTimer(X)
+			e.setSoundTimer(X)
 		case 0x1E:
-			emu.addToIndex(X)
+			e.addToIndex(X)
 		case 0x0A:
-			emu.waitForKey(X)
+			e.waitForKey(X)
 		case 0x29:
-			emu.setIndexToFont(X)
+			e.setIndexToFont(X)
 		case 0x33:
-			emu.storeDecimal(X)
+			e.storeDecimal(X)
 		case 0x55:
-			emu.storeRegisters(X)
+			e.storeRegisters(X)
 		case 0x65:
-			emu.loadRegisters(X)
+			e.loadRegisters(X)
 		}
 	}
 }
 
-func (emu *Emulator) clearScreen() {
-	emu.screen.Clear()
+func (e *Emulator) clearScreen() {
+	e.screen.Clear()
 }
 
-func (emu *Emulator) jump(NNN uint16) {
-	emu.pc = NNN
+func (e *Emulator) jump(NNN uint16) {
+	e.pc = NNN
 }
 
-func (emu *Emulator) callSubroutine(NNN uint16) {
-	emu.stack.Push(emu.pc)
-	emu.jump(NNN)
+func (e *Emulator) callSubroutine(NNN uint16) {
+	e.stack.Push(e.pc)
+	e.jump(NNN)
 }
 
-func (emu *Emulator) returnFromSubroutine() {
-	addr, err := emu.stack.Pop()
+func (e *Emulator) returnFromSubroutine() {
+	addr, err := e.stack.Pop()
 	if err != nil {
 		panic(err)
 	}
-	emu.pc = addr
+	e.pc = addr
 }
 
-func (emu *Emulator) skip() {
-	emu.pc += 2
+func (e *Emulator) skip() {
+	e.pc += 2
 }
 
-func (emu *Emulator) setRegister(X uint8, NN uint8) {
-	emu.registers[X] = NN
+func (e *Emulator) setRegister(X uint8, NN uint8) {
+	e.registers[X] = NN
 }
 
-func (emu *Emulator) addToRegister(X uint8, NN uint8) {
-	emu.registers[X] = emu.registers[X] + NN
+func (e *Emulator) addToRegister(X uint8, NN uint8) {
+	e.registers[X] = e.registers[X] + NN
 }
 
-func (emu *Emulator) logicalOr(X uint8, Y uint8) {
-	emu.registers[X] |= emu.registers[Y]
+func (e *Emulator) logicalOr(X uint8, Y uint8) {
+	e.registers[X] |= e.registers[Y]
 }
 
-func (emu *Emulator) logicalAnd(X uint8, Y uint8) {
-	emu.registers[X] &= emu.registers[Y]
+func (e *Emulator) logicalAnd(X uint8, Y uint8) {
+	e.registers[X] &= e.registers[Y]
 }
 
-func (emu *Emulator) logicalXor(X uint8, Y uint8) {
-	emu.registers[X] ^= emu.registers[Y]
+func (e *Emulator) logicalXor(X uint8, Y uint8) {
+	e.registers[X] ^= e.registers[Y]
 }
 
-func (emu *Emulator) addTwoRegisters(X uint8, Y uint8) {
-	temp := uint16(emu.registers[X] + emu.registers[Y])
+func (e *Emulator) addTwoRegisters(X uint8, Y uint8) {
+	temp := uint16(e.registers[X] + e.registers[Y])
 	if temp <= 255 {
-		emu.registers[X] = uint8(temp)
-		emu.registers[0xF] = 0
+		e.registers[X] = uint8(temp)
+		e.registers[0xF] = 0
 	} else {
-		emu.registers[X] = uint8(temp - 256)
-		emu.registers[0xF] = 1
+		e.registers[X] = uint8(temp - 256)
+		e.registers[0xF] = 1
 	}
 }
 
-func (emu *Emulator) subTwoRegisters(X uint8, Y uint8) {
-	if emu.registers[X] > emu.registers[Y] {
-		emu.registers[X] -= emu.registers[Y]
-		emu.registers[0xF] = 1
+func (e *Emulator) subTwoRegisters(X uint8, Y uint8) {
+	if e.registers[X] > e.registers[Y] {
+		e.registers[X] -= e.registers[Y]
+		e.registers[0xF] = 1
 	} else {
-		emu.registers[0xF] = 0
-		emu.registers[X] -= emu.registers[Y] + 255 + 1
+		e.registers[0xF] = 0
+		e.registers[X] -= e.registers[Y] + 255 + 1
 	}
 }
 
-func (emu *Emulator) subnTwoRegisters(X uint8, Y uint8) {
-	if emu.registers[Y] > emu.registers[X] {
-		emu.registers[X] = emu.registers[Y] - emu.registers[X]
-		emu.registers[0xF] = 1
+func (e *Emulator) subnTwoRegisters(X uint8, Y uint8) {
+	if e.registers[Y] > e.registers[X] {
+		e.registers[X] = e.registers[Y] - e.registers[X]
+		e.registers[0xF] = 1
 	} else {
-		emu.registers[0xF] = 0
-		emu.registers[X] = emu.registers[Y] - emu.registers[X] + 255 + 1
+		e.registers[0xF] = 0
+		e.registers[X] = e.registers[Y] - e.registers[X] + 255 + 1
 	}
 }
 
-func (emu *Emulator) shiftRegisterRight(X uint8) {
-	emu.registers[0xF] = emu.registers[X] & 0x1
-	emu.registers[X] >>= 1
+func (e *Emulator) shiftRegisterRight(X uint8) {
+	e.registers[0xF] = e.registers[X] & 0x1
+	e.registers[X] >>= 1
 }
 
-func (emu *Emulator) shiftRegisterLeft(X uint8) {
-	emu.registers[0xF] = (emu.registers[X] & 0x80) >> 7
-	emu.registers[X] <<= 1
+func (e *Emulator) shiftRegisterLeft(X uint8) {
+	e.registers[0xF] = (e.registers[X] & 0x80) >> 7
+	e.registers[X] <<= 1
 }
 
-func (emu *Emulator) setIndex(NNN uint16) {
-	emu.index = NNN
+func (e *Emulator) setIndex(NNN uint16) {
+	e.index = NNN
 }
 
-func (emu *Emulator) jumpWithOffset(NNN uint16) {
-	emu.pc = uint16(emu.registers[0]) + NNN
+func (e *Emulator) jumpWithOffset(NNN uint16) {
+	e.pc = uint16(e.registers[0]) + NNN
 }
 
-func (emu *Emulator) generateRandom(X uint8, NN uint8) {
-	emu.registers[X] = uint8(rand.Intn(255)) & NN
+func (e *Emulator) generateRandom(X uint8, NN uint8) {
+	e.registers[X] = uint8(rand.Intn(255)) & NN
 }
 
-func (emu *Emulator) display(X uint8, Y uint8, N uint8) {
-	x0 := emu.registers[X] % uint8(emu.screen.width)
-	y0 := emu.registers[Y] % uint8(emu.screen.height)
-	emu.registers[0xF] = 0
+func (e *Emulator) display(X uint8, Y uint8, N uint8) {
+	x0 := e.registers[X] % uint8(e.screen.width)
+	y0 := e.registers[Y] % uint8(e.screen.height)
+	e.registers[0xF] = 0
 
 	var row uint8
 	for row = 0; row < N; row++ {
-		if y0+row >= uint8(emu.screen.height) {
+		if y0+row >= uint8(e.screen.height) {
 			break
 		}
 
-		sprite := emu.memory[emu.index+uint16(row)]
+		sprite := e.memory[e.index+uint16(row)]
 		spriteBin := fmt.Sprintf("%08b", sprite)
 
 		var col uint8
 		for col = 0; col < 8; col++ {
 			pixel := int(spriteBin[col] - '0')
 			x := float64(x0 + col)
-			y := float64(uint8(emu.screen.height) - y0 - row - 1)
+			y := float64(uint8(e.screen.height) - y0 - row - 1)
 
-			if x >= emu.screen.width {
+			if x >= e.screen.width {
 				break
 			}
 
-			screenPixel := emu.screen.GetColor(x, y)
+			screenPixel := e.screen.GetColor(x, y)
 			if (pixel == 1) && (screenPixel == 1) {
-				emu.screen.DrawPixel(x, y, colornames.Black)
-				emu.registers[0xF] = 1
+				e.screen.DrawPixel(x, y, colornames.Black)
+				e.registers[0xF] = 1
 			} else if (pixel == 1) && (screenPixel != 1) {
-				emu.screen.DrawPixel(x, y, colornames.White)
+				e.screen.DrawPixel(x, y, colornames.White)
 			}
 		}
 	}
 }
 
-func (emu *Emulator) keyPressed(X uint8) bool {
-	return emu.screen.window.Pressed(keypad[emu.registers[X]])
+func (e *Emulator) keyPressed(X uint8) bool {
+	return e.screen.KeyPressed(keypad[e.registers[X]])
 }
 
-func (emu *Emulator) setDelayTimer(X uint8) {
-	emu.delayTimer = emu.registers[X]
+func (e *Emulator) setDelayTimer(X uint8) {
+	e.delayTimer = e.registers[X]
 }
 
-func (emu *Emulator) setSoundTimer(X uint8) {
-	emu.soundTimer = emu.registers[X]
+func (e *Emulator) setSoundTimer(X uint8) {
+	e.soundTimer = e.registers[X]
 }
 
-func (emu *Emulator) addToIndex(X uint8) {
-	emu.index += uint16(emu.registers[X])
+func (e *Emulator) addToIndex(X uint8) {
+	e.index += uint16(e.registers[X])
 }
 
-func (emu *Emulator) waitForKey(X uint8) {
-	for {
-		emu.screen.window.UpdateInputWait(0)
-		for keyByte, key := range keypad {
-			if emu.screen.window.JustPressed(key) {
-				emu.registers[X] = keyByte
-			}
-		}
-	}
+func (e *Emulator) waitForKey(X uint8) {
 }
 
-func (emu *Emulator) setIndexToFont(X uint8) {
-	emu.index = 5 * uint16(emu.registers[X])
+func (e *Emulator) setIndexToFont(X uint8) {
+	e.index = 5 * uint16(e.registers[X])
 }
 
-func (emu *Emulator) storeDecimal(X uint8) {
-	emu.memory[emu.index] = uint16(emu.registers[X] / 100)
-	emu.memory[emu.index+1] = uint16(emu.registers[X] % 100 / 10)
-	emu.memory[emu.index+2] = uint16(emu.registers[X] % 10)
+func (e *Emulator) storeDecimal(X uint8) {
+	e.memory[e.index] = uint16(e.registers[X] / 100)
+	e.memory[e.index+1] = uint16(e.registers[X] % 100 / 10)
+	e.memory[e.index+2] = uint16(e.registers[X] % 10)
 }
 
-func (emu *Emulator) storeRegisters(X uint8) {
+func (e *Emulator) storeRegisters(X uint8) {
 	var i uint8
 	for i = 0; i < X+1; i++ {
 		idx := uint16(i)
-		emu.memory[emu.index+idx] = uint16(emu.registers[idx])
+		e.memory[e.index+idx] = uint16(e.registers[idx])
 	}
 }
 
-func (emu *Emulator) loadRegisters(X uint8) {
+func (e *Emulator) loadRegisters(X uint8) {
 	var i uint8
 	for i = 0; i < X+1; i++ {
 		idx := uint16(i)
-		emu.registers[idx] = uint8(emu.memory[emu.index+idx])
+		e.registers[idx] = uint8(e.memory[e.index+idx])
 	}
 }
 
-func (emu *Emulator) DecrementTimers() {
-	if emu.delayTimer != 0 {
-		emu.delayTimer -= 1
+func (e *Emulator) DecrementTimers() {
+	if e.delayTimer != 0 {
+		e.delayTimer -= 1
 	}
-	if emu.soundTimer != 0 {
-		emu.soundTimer -= 1
+	if e.soundTimer != 0 {
+		e.soundTimer -= 1
 	}
 }
