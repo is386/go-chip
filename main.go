@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	FILENAME   = "ibm.ch8"
+	FILENAME   = "pong.ch8"
 	SCALE      = 10.0
 	EMU_DELAY  = 1 * time.Millisecond
 	TIME_DELAY = 16 * time.Millisecond
@@ -54,8 +54,8 @@ func run() {
 	emu.LoadRom(FILENAME)
 
 	for !screen.Closed() {
-		time.Sleep(EMU_DELAY)
 		emu.Execute()
+		screen.Update()
 	}
 
 	ticker.Stop()

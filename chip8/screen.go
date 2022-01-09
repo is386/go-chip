@@ -19,7 +19,6 @@ func NewScreen(scale float64) *Screen {
 	cfg := pixelgl.WindowConfig{
 		Title:  "CHIP-8 Emulator",
 		Bounds: pixel.R(0, 0, 64*scale, 32*scale),
-		VSync:  true,
 	}
 
 	win, err := pixelgl.NewWindow(cfg)
@@ -29,6 +28,7 @@ func NewScreen(scale float64) *Screen {
 
 	imd := imdraw.New(nil)
 	screen := Screen{width: 64, height: 32, scale: scale, window: win, drawer: imd}
+	screen.Clear()
 	return &screen
 }
 
@@ -37,6 +37,7 @@ func (s *Screen) Clear() {
 }
 
 func (s *Screen) Update() {
+	s.drawer.Draw(s.window)
 	s.window.Update()
 }
 
@@ -51,8 +52,6 @@ func (s *Screen) DrawPixel(x0 float64, y0 float64, color color.RGBA) {
 	s.drawer.Push(pixel.V(x, y))
 	s.drawer.Push(pixel.V(x+s.scale, y+s.scale))
 	s.drawer.Rectangle(0)
-	s.drawer.Draw(s.window)
-	s.Update()
 }
 
 func (s *Screen) GetColor(x float64, y float64) int {
