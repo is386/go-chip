@@ -1,67 +1,48 @@
 package chip8
 
 import (
-	"image/color"
-
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/imdraw"
-	"github.com/faiface/pixel/pixelgl"
-	"golang.org/x/image/colornames"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 type Screen struct {
-	width, height, scale float64
-	window               *pixelgl.Window
-	drawer               *imdraw.IMDraw
+	width, height, scale int32
+	window               *sdl.Window
+	surface              *sdl.Surface
 }
 
-func NewScreen(scale float64) *Screen {
-	cfg := pixelgl.WindowConfig{
-		Title:  "CHIP-8 Emulator",
-		Bounds: pixel.R(0, 0, 64*scale, 32*scale),
-	}
-
-	win, err := pixelgl.NewWindow(cfg)
+func NewScreen(scale int32) *Screen {
+	win, err := sdl.CreateWindow("CHIP-8 Emulator", sdl.WINDOWPOS_UNDEFINED, sdl.WINDOWPOS_UNDEFINED,
+		64*scale, 32*scale, sdl.WINDOW_SHOWN)
 	if err != nil {
 		panic(err)
 	}
 
-	imd := imdraw.New(nil)
-	screen := Screen{width: 64, height: 32, scale: scale, window: win, drawer: imd}
-	screen.Clear()
+	surface, err := win.GetSurface()
+	if err != nil {
+		panic(err)
+	}
+
+	screen := Screen{width: 64, height: 32, scale: scale, window: win, surface: surface}
 	return &screen
 }
 
 func (s *Screen) Clear() {
-	s.window.Clear(colornames.Black)
+	s.surface.FillRect(nil, 0)
 }
 
-func (s *Screen) Update() {
-	s.drawer.Draw(s.window)
-	s.window.Update()
-}
-
-func (s *Screen) Closed() bool {
-	return s.window.Closed()
-}
-
-func (s *Screen) DrawPixel(x0 float64, y0 float64, color color.RGBA) {
+func (s *Screen) DrawPixel(x0 int32, y0 int32, color uint32) {
 	x := x0 * s.scale
 	y := y0 * s.scale
-	s.drawer.Color = color
-	s.drawer.Push(pixel.V(x, y))
-	s.drawer.Push(pixel.V(x+s.scale, y+s.scale))
-	s.drawer.Rectangle(0)
+	pixel := sdl.Rect{X: x, Y: y, W: s.scale, H: s.scale}
+	s.surface.FillRect(&pixel, color)
+	s.window.UpdateSurface()
 }
 
-func (s *Screen) GetColor(x float64, y float64) int {
-	color := s.window.Color(pixel.V(x*s.scale, y*s.scale))
-	if color.R == 0 && color.G == 0 && color.B == 0 && color.A == 1 {
+func (s *Screen) GetColor(x int32, y int32) int {
+	color := s.surface.At(int(x*s.scale), int(y*s.scale))
+	r, g, b, _ := color.RGBA()
+	if r+g+b == 0 {
 		return 0
 	}
 	return 1
-}
-
-func (s *Screen) KeyPressed(key pixelgl.Button) bool {
-	return s.window.Pressed(key)
 }

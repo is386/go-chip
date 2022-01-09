@@ -3,14 +3,15 @@ package main
 import (
 	"time"
 
-	"github.com/faiface/pixel/pixelgl"
 	"github.com/is386/GoCHIP/chip8"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
 var (
-	FILENAME   = "roms/brick.ch8"
-	SCALE      = 10.0
-	TIME_DELAY = 16 * time.Millisecond
+	FILENAME     = "roms/brick.ch8"
+	SCALE        = 10
+	EMU_DELAY    = 2 * time.Millisecond
+	TICKER_DELAY = 16 * time.Millisecond
 )
 
 func emulatorTicker(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan bool) {
@@ -24,25 +25,37 @@ func emulatorTicker(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan b
 	}
 }
 
-func run() {
-	screen := chip8.NewScreen(SCALE)
-	emu := chip8.NewEmulator(screen)
+func main() {
+	if err := sdl.Init(sdl.INIT_EVERYTHING); err != nil {
+		panic(err)
+	}
+	defer sdl.Quit()
 
-	ticker := time.NewTicker(TIME_DELAY)
+	screen := chip8.NewScreen(int32(SCALE))
+	keypad := chip8.NewKeypad()
+	emu := chip8.NewEmulator(screen, keypad)
+
+	ticker := time.NewTicker(TICKER_DELAY)
 	stopTicking := make(chan bool)
 	go emulatorTicker(emu, ticker, stopTicking)
 
 	emu.LoadRom(FILENAME)
 
-	for !screen.Closed() {
+	running := true
+	for running {
+		time.Sleep(EMU_DELAY)
 		emu.Execute()
-		screen.Update()
+
+		for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+			switch e := event.(type) {
+			case *sdl.QuitEvent:
+				running = false
+			case *sdl.KeyboardEvent:
+				keypad.KeyEvent(e)
+			}
+		}
 	}
 
 	ticker.Stop()
 	stopTicking <- true
-}
-
-func main() {
-	pixelgl.Run(run)
 }

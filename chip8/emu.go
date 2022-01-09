@@ -4,9 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"math/rand"
-
-	"github.com/faiface/pixel/pixelgl"
-	"golang.org/x/image/colornames"
 )
 
 var (
@@ -27,25 +24,6 @@ var (
 		0xE0, 0x90, 0x90, 0x90, 0xE0,
 		0xF0, 0x80, 0xF0, 0x80, 0xF0,
 		0xF0, 0x80, 0xF0, 0x80, 0x80}
-
-	keypad = map[uint8]pixelgl.Button{
-		0x0: pixelgl.KeyX,
-		0x1: pixelgl.Key1,
-		0x2: pixelgl.Key2,
-		0x3: pixelgl.Key3,
-		0x4: pixelgl.KeyQ,
-		0x5: pixelgl.KeyW,
-		0x6: pixelgl.KeyE,
-		0x7: pixelgl.KeyA,
-		0x8: pixelgl.KeyS,
-		0x9: pixelgl.KeyD,
-		0xA: pixelgl.KeyZ,
-		0xB: pixelgl.KeyC,
-		0xC: pixelgl.Key4,
-		0xD: pixelgl.KeyR,
-		0xE: pixelgl.KeyF,
-		0xF: pixelgl.KeyV,
-	}
 )
 
 type Emulator struct {
@@ -57,10 +35,11 @@ type Emulator struct {
 	soundTimer uint8
 	delayTimer uint8
 	screen     *Screen
+	keypad     *Keypad
 }
 
-func NewEmulator(screen *Screen) *Emulator {
-	e := Emulator{pc: 0x200, screen: screen}
+func NewEmulator(screen *Screen, keypad *Keypad) *Emulator {
+	e := Emulator{pc: 0x200, screen: screen, keypad: keypad}
 	e.loadFont()
 	return &e
 }
@@ -312,8 +291,8 @@ func (e *Emulator) display(X uint8, Y uint8, N uint8) {
 		var col uint8
 		for col = 0; col < 8; col++ {
 			pixel := int(spriteBin[col] - '0')
-			x := float64(x0 + col)
-			y := float64(uint8(e.screen.height) - y0 - row - 1)
+			x := int32(x0 + col)
+			y := int32(y0 + row)
 
 			if x >= e.screen.width {
 				break
@@ -321,17 +300,17 @@ func (e *Emulator) display(X uint8, Y uint8, N uint8) {
 
 			screenPixel := e.screen.GetColor(x, y)
 			if (pixel == 1) && (screenPixel == 1) {
-				e.screen.DrawPixel(x, y, colornames.Black)
+				e.screen.DrawPixel(x, y, 0)
 				e.registers[0xF] = 1
 			} else if (pixel == 1) && (screenPixel != 1) {
-				e.screen.DrawPixel(x, y, colornames.White)
+				e.screen.DrawPixel(x, y, 0xffffff)
 			}
 		}
 	}
 }
 
 func (e *Emulator) keyPressed(X uint8) bool {
-	return e.screen.KeyPressed(keypad[e.registers[X]])
+	return e.keypad.KeyPressed(e.registers[X])
 }
 
 func (e *Emulator) setDelayTimer(X uint8) {
