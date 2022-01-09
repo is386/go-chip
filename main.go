@@ -8,10 +8,10 @@ import (
 )
 
 var (
-	FILENAME     = "roms/brick.ch8"
-	SCALE        = 10
-	EMU_DELAY    = 2 * time.Millisecond
-	TICKER_DELAY = 16 * time.Millisecond
+	FILENAME           = "roms/asd.ch8"
+	SCALE        int32 = 10
+	EMU_DELAY          = 2 * time.Millisecond
+	TICKER_DELAY       = 16 * time.Millisecond
 )
 
 func emulatorTicker(emu *chip8.Emulator, ticker *time.Ticker, stopTicking chan bool) {
@@ -31,15 +31,14 @@ func main() {
 	}
 	defer sdl.Quit()
 
-	screen := chip8.NewScreen(int32(SCALE))
+	screen := chip8.NewScreen(SCALE)
 	keypad := chip8.NewKeypad()
 	emu := chip8.NewEmulator(screen, keypad)
+	emu.LoadRom(FILENAME)
 
 	ticker := time.NewTicker(TICKER_DELAY)
 	stopTicking := make(chan bool)
 	go emulatorTicker(emu, ticker, stopTicking)
-
-	emu.LoadRom(FILENAME)
 
 	running := true
 	for running {
