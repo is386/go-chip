@@ -20,21 +20,9 @@ The `<rom_file>` parameter is just a CHIP-8 ROM. I have provided a few in this r
 
 The CHIP-8 had a hexadecimal keypad. The keys are mapped using the table below:
 
-| Hex Key | Keyboard Key |
-| :-----: | :----------: |
-|   `1`   |     `1`      |
-|   `2`   |     `2`      |
-|   `3`   |     `3`      |
-|   `4`   |     `Q`      |
-|   `5`   |     `W`      |
-|   `6`   |     `E`      |
-|   `7`   |     `A`      |
-|   `8`   |     `S`      |
-|   `9`   |     `D`      |
-|   `0`   |     `X`      |
-|   `A`   |     `Z`      |
-|   `B`   |     `C`      |
-|   `C`   |     `4`      |
-|   `D`   |     `R`      |
-|   `E`   |     `F`      |
-|   `F`   |     `V`      |
+|     CHIP-8      |    Emulator     |
+| :-------------: | :-------------: |
+| `1` `2` `3` `C` | `1` `2` `3` `4` |
+| `4` `5` `6` `D` | `Q` `W` `E` `R` |
+| `7` `8` `9` `E` | `A` `S` `D` `F` |
+| `A` `0` `B` `F` | `Z` `X` `C` `V` |
