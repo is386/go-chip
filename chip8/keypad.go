@@ -1,6 +1,8 @@
 package chip8
 
-import "github.com/veandco/go-sdl2/sdl"
+import (
+	"github.com/veandco/go-sdl2/sdl"
+)
 
 var (
 	keymap = map[sdl.Keycode]uint8{
@@ -45,5 +47,21 @@ func (k *Keypad) KeyEvent(event *sdl.KeyboardEvent) {
 		k.keys[keyByte] = false
 	case sdl.KEYDOWN:
 		k.keys[keyByte] = true
+	}
+}
+
+func (k *Keypad) WaitForKey() uint8 {
+	for {
+		event := sdl.WaitEvent()
+		if event != nil {
+			switch et := event.(type) {
+			case *sdl.KeyboardEvent:
+				for key, keyByte := range keymap {
+					if et.Keysym.Sym == key {
+						return keyByte
+					}
+				}
+			}
+		}
 	}
 }

@@ -326,6 +326,7 @@ func (e *Emulator) addToIndex(X uint8) {
 }
 
 func (e *Emulator) waitForKey(X uint8) {
+	e.registers[X] = e.keypad.WaitForKey()
 }
 
 func (e *Emulator) setIndexToFont(X uint8) {
