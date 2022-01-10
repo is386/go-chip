@@ -10,7 +10,7 @@ The `<rom_file>` parameter is just a CHIP-8 ROM. I have provided a few in this r
 
 ## Dependencies
 
-- `go 1.5`
+- `go 1.15`
 
 ### Go Dependencies
 
