@@ -136,7 +136,7 @@ func (e *Emulator) Execute() {
 	case 0xA:
 		e.setIndex(NNN)
 	case 0xB:
-		e.jumpWithOffset(NNN)
+		e.jumpWithOffset(X, NNN)
 	case 0xC:
 		e.generateRandom(X, NN)
 	case 0xD:
@@ -266,8 +266,8 @@ func (e *Emulator) setIndex(NNN uint16) {
 	e.index = NNN
 }
 
-func (e *Emulator) jumpWithOffset(NNN uint16) {
-	e.pc = uint16(e.registers[0]) + NNN
+func (e *Emulator) jumpWithOffset(X uint8, NNN uint16) {
+	e.pc = uint16(e.registers[X]) + NNN
 }
 
 func (e *Emulator) generateRandom(X uint8, NN uint8) {
