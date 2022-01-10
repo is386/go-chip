@@ -15,3 +15,21 @@ The `<rom_file>` parameter is just a CHIP-8 ROM. I have provided a few in this r
 ### Go Dependencies
 
 - `github.com/veandco/go-sdl2/sdl`
+
+## Keyboard
+
+The controls will vary from game to game. These are the keys used by the emulators, it ressembles a hexadecimal keypad:
+
+```
+Hexadecimal Keypad:
+1 2 3 C
+4 5 6 D
+7 8 9 E
+A 0 B F
+
+Emulated Keypad:
+1 2 3 4
+Q W E R
+A S D F
+Z X C V
+```
