@@ -37,18 +37,13 @@ func (k *Keypad) KeyPressed(key uint8) bool {
 }
 
 func (k *Keypad) KeyEvent(event *sdl.KeyboardEvent) {
+	key := event.Keysym.Sym
+	keyByte := keymap[key]
+
 	switch event.Type {
 	case sdl.KEYUP:
-		k.keyUp(event.Keysym.Sym)
+		k.keys[keyByte] = false
 	case sdl.KEYDOWN:
-		k.keyDown(event.Keysym.Sym)
+		k.keys[keyByte] = true
 	}
-}
-
-func (k *Keypad) keyDown(key sdl.Keycode) {
-	k.keys[keymap[key]] = true
-}
-
-func (k *Keypad) keyUp(key sdl.Keycode) {
-	k.keys[keymap[key]] = false
 }
