@@ -87,6 +87,10 @@ func (e *Emulator) Execute() {
 			e.clearScreen()
 		case 0xEE:
 			e.returnFromSubroutine()
+		case 0xFE:
+			e.enableLowRes()
+		case 0xFF:
+			e.enableHighRes()
 		}
 	case 0x1:
 		e.jump(NNN)
@@ -362,4 +366,12 @@ func (e *Emulator) DecrementTimers() {
 	if e.soundTimer != 0 {
 		e.soundTimer -= 1
 	}
+}
+
+func (e *Emulator) enableLowRes() {
+	e.screen.EnableLowRes()
+}
+
+func (e *Emulator) enableHighRes() {
+	e.screen.EnableHighRes()
 }
